@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE Agent Development Kit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">LINE Agent Development Kit</h1>
+            <p class="text-gray-600">Real-time AI-powered communication platform</p>
+            <div id="connection-status" class="mt-2 px-3 py-1 rounded-full text-sm font-medium status-disconnected">
+                Disconnected
+            </div>
+        </header>
+
+        <!-- API Testing Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">API Testing</h2>
+            <div class="flex gap-4 mb-4">
+                <input 
+                    id="messageInput" 
+                    type="text" 
+                    placeholder="Enter your message..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button 
+                    id="sendButton" 
+                    class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Send
+                </button>
+            </div>
+            <div id="response" class="p-4 bg-gray-50 rounded-lg min-h-[100px] whitespace-pre-wrap"></div>
+        </div>
+
+        <!-- WebSocket Testing Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">WebSocket Testing</h2>
+            <div class="flex gap-4 mb-4">
+                <input 
+                    id="sessionId" 
+                    type="text" 
+                    placeholder="Session ID (optional)" 
+                    value="test-session"
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <button 
+                    id="connectButton" 
+                    class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                    Connect
+                </button>
+                <button 
+                    id="disconnectButton" 
+                    class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    disabled
+                >
+                    Disconnect
+                </button>
+            </div>
+            <div class="flex gap-4 mb-4">
+                <input 
+                    id="wsMessageInput" 
+                    type="text" 
+                    placeholder="WebSocket message..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    disabled
+                />
+                <button 
+                    id="wsSendButton" 
+                    class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    disabled
+                >
+                    Send
+                </button>
+            </div>
+            <div id="wsMessages" class="p-4 bg-gray-50 rounded-lg min-h-[200px] max-h-[400px] overflow-y-auto"></div>
+        </div>
+
+        <!-- System Status -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-semibold mb-4">System Status</h2>
+            <div id="systemStatus" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-semibold text-gray-700">Backend API</h3>
+                    <p id="backendStatus" class="text-gray-600">Checking...</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-semibold text-gray-700">AI Service</h3>
+                    <p id="aiStatus" class="text-gray-600">Checking...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .status-connected {
+            background-color: #10b981;
+            color: white;
+        }
+        .status-disconnected {
+            background-color: #ef4444;
+            color: white;
+        }
+        .message-user {
+            background-color: #3b82f6;
+            color: white;
+            margin-left: 2rem;
+            border-radius: 1rem 1rem 0.25rem 1rem;
+        }
+        .message-agent {
+            background-color: #e5e7eb;
+            color: #374151;
+            margin-right: 2rem;
+            border-radius: 1rem 1rem 1rem 0.25rem;
+        }
+    </style>
+
+    <script type="module">
+        import { WebSocketManager } from './src/websocket.js';
+
+        const wsManager = new WebSocketManager();
+        let isConnected = false;
+
+        // API Testing with loading animation
+        document.getElementById('sendButton').addEventListener('click', async () => {
+            const message = document.getElementById('messageInput').value;
+            if (!message) return;
+
+            const sendButton = document.getElementById('sendButton');
+            const responseDiv = document.getElementById('response');
+            
+            // Show loading state
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            responseDiv.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span class="text-gray-600">AI is thinking...</span>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                responseDiv.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div class="text-green-800 font-medium mb-1">AI Response:</div>
+                        <div class="text-gray-800">${data.response || JSON.stringify(data, null, 2)}</div>
+                    </div>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="text-red-800 font-medium mb-1">Error:</div>
+                        <div class="text-red-700">${error.message}</div>
+                        <div class="text-sm text-red-600 mt-1">Make sure the backend server is running on port 8000</div>
+                    </div>
+                `;
+            } finally {
+                // Reset button state
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        });
+
+        // WebSocket Testing
+        document.getElementById('connectButton').addEventListener('click', () => {
+            const sessionId = document.getElementById('sessionId').value || 'test-session';
+            wsManager.connect(sessionId);
+            
+            document.getElementById('connectButton').disabled = true;
+            document.getElementById('disconnectButton').disabled = false;
+            document.getElementById('wsMessageInput').disabled = false;
+            document.getElementById('wsSendButton').disabled = false;
+        });
+
+        document.getElementById('disconnectButton').addEventListener('click', () => {
+            wsManager.disconnect();
+            
+            document.getElementById('connectButton').disabled = false;
+            document.getElementById('disconnectButton').disabled = true;
+            document.getElementById('wsMessageInput').disabled = true;
+            document.getElementById('wsSendButton').disabled = true;
+        });
+
+        document.getElementById('wsSendButton').addEventListener('click', () => {
+            const message = document.getElementById('wsMessageInput').value;
+            if (!message) return;
+
+            wsManager.sendMessage('user_message', message);
+            addWSMessage(`You: ${message}`, 'message-user');
+            document.getElementById('wsMessageInput').value = '';
+        });
+
+        // WebSocket message handlers
+        wsManager.addMessageHandler('agent_message', (data) => {
+            addWSMessage(`Agent: ${data.content}`, 'message-agent');
+        });
+
+        wsManager.addMessageHandler('system', (data) => {
+            addWSMessage(`System: ${data.content}`, 'bg-yellow-100 text-yellow-800');
+        });
+
+        function addWSMessage(message, className) {
+            const messagesDiv = document.getElementById('wsMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `p-2 mb-2 rounded-lg ${className}`;
+            messageDiv.textContent = message;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // System status check
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                
+                document.getElementById('backendStatus').textContent = data.status === 'healthy' ? ' Online' : 'L Offline';
+                document.getElementById('aiStatus').textContent = data.ai_enabled ? ' Configured' : '� Not configured';
+            } catch (error) {
+                document.getElementById('backendStatus').textContent = 'L Offline';
+                document.getElementById('aiStatus').textContent = 'L Unknown';
+            }
+        }
+
+        // Initialize
+        checkSystemStatus();
+        setInterval(checkSystemStatus, 30000); // Check every 30 seconds
+
+        // Enter key handlers
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('sendButton').click();
+        });
+
+        document.getElementById('wsMessageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('wsSendButton').click();
+        });
+    </script>
+</body>
+</html>

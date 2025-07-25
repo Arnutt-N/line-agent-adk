@@ -1,0 +1,20 @@
+{
+  "name": "line-agent-adk-frontend",
+  "version": "1.0.0",
+  "description": "Frontend interface for LINE Agent Development Kit",
+  "scripts": {
+    "dev": "python -m http.server 3000",
+    "start": "python -m http.server 3000",
+    "build": "echo 'Static build - no build step needed'",
+    "preview": "python -m http.server 3000"
+  },
+  "keywords": [
+    "line-bot",
+    "ai-agent",
+    "google-adk",
+    "gemini",
+    "websocket"
+  ],
+  "author": "LINE Agent Development Kit",
+  "license": "MIT"
+}
