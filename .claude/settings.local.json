@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx:*)",
+      "Bash(mcp:*)",
+      "Bash(python:*)",
+      "Bash(claude mcp:*)",
+      "Bash(where bash)",
+      "Bash(set CLAUDE_CODE_GIT_BASH_PATH=C:Usersarnutt.nAppDataLocalProgramsGitusrbinbash.exe)",
+      "Bash(powershell:*)",
+      "Bash(\"C:\\Users\\arnutt.n\\AppData\\Local\\Programs\\Git\\usr\\bin\\bash.exe\" -c \"claude mcp add context7\")"
+    ],
+    "deny": []
+  }
+}
